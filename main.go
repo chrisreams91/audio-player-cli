@@ -15,17 +15,36 @@ import (
 	"github.com/mjibson/go-dsp/fft"
 )
 
+
+const spectrumWidth = 314
+const maxHeight = 20
+
+var freqSpectrum = make([]float64, 512)
+var redraw chan string
+
 type CustomSteamer struct {
 	streamer beep.Streamer
 }
 
-func (cs *CustomSteamer) Add(streamer beep.Streamer) {
-	cs.streamer = streamer
+func (cs *CustomSteamer) Stream(samples [][2]float64) (n int, ok bool) {
+	filled := 0
+	// filled is broke
+	// fmt.Println("filled , ", filled)
+	for filled < len(samples) {
+		// should this ok be handled ?
+		n, _ := cs.streamer.Stream(samples[filled:])
+		
+		updateSpectrumValues(44100, samples[filled:], maxHeight, freqSpectrum)
+
+		filled += n
+		redraw <- "redraw that bitch"
+	}
+	return len(samples), true
 }
 
-const spectrumWidth = 314
-const maxHeight = 20
-var freqSpectrum = make([]float64, 512)
+func (cs *CustomSteamer) Err() error {
+	return nil
+}
 
 func updateSpectrumValues(numberOfSamples int, samples [][2]float64, maxValue float64, freqSpectrum []float64) {
 
@@ -49,31 +68,6 @@ func updateSpectrumValues(numberOfSamples int, samples [][2]float64, maxValue fl
 	}
 }
 
-func (cs *CustomSteamer) Stream(samples [][2]float64) (n int, ok bool) {
-	filled := 0
-	// filled is broke
-	// fmt.Println("filled , ", filled)
-	for filled < len(samples) {
-	
-
-
-		// should this ok be handled ?
-		n, _ := cs.streamer.Stream(samples[filled:])
-		
-		updateSpectrumValues(44100, samples[filled:], maxHeight, freqSpectrum)
-
-		filled += n
-		redraw <- "redraw that bitch"
-	}
-	return len(samples), true
-}
-
-func (cs *CustomSteamer) Err() error {
-	return nil
-}
-
-var redraw chan string
-var customStreamer CustomSteamer
 
 func main() {
 	redraw = make(chan string)
@@ -85,7 +79,6 @@ func main() {
 	sampleRate := beep.SampleRate(44100)
 	speaker.Init(sampleRate, sampleRate.N(time.Second/10))
 	
-
 
 	var file string
     flag.StringVar(&file, "file", "", "mp3 filename")
@@ -102,9 +95,7 @@ func main() {
 	}
 
 	resampled := beep.Resample(4, format.SampleRate, sampleRate, streamer)
-	customStreamer.streamer = resampled
-
-	speaker.Play(&customStreamer)
+	speaker.Play(&CustomSteamer{streamer: resampled})
 
 	bar := buildBars(freqSpectrum[0:spectrumWidth], "temp")
 	uiEvents := ui.PollEvents()
