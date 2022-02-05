@@ -17,13 +17,10 @@ import (
 
 
 const numSamples = 48000
-// const defaultWindowWidth = 800
-// const defaultWindowHeight = 450
-// const spectrumSize = 80
-// const bitSize = 64
-
+// tinker with peak fall off
 const peakFalloff = 8.0
 const spectrumWidth = 80
+const spectrumOffset = 0
 const maxHeight = 20
 
 var freqSpectrum = make([]float64, spectrumWidth)
@@ -41,7 +38,7 @@ func (cs *CustomSteamer) Stream(samples [][2]float64) (n int, ok bool) {
 			return len(samples), false
 		}
 
-		updateSpectrumValues(44100, samples[filled:], freqSpectrum)
+		updateSpectrumValues(numSamples, samples[filled:], freqSpectrum)
 
 		filled += n
 		redraw <- "redraw that bitch"
@@ -83,7 +80,7 @@ func main() {
 	}
 	defer ui.Close()
 
-	sampleRate := beep.SampleRate(44100)
+	sampleRate := beep.SampleRate(numSamples)
 	speaker.Init(sampleRate, sampleRate.N(time.Second/10))
 	
 
@@ -95,20 +92,16 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
-
 	streamer, format, err := mp3.Decode(f)
-	// streamer, _, err := mp3.Decode(f)
 	if err != nil {
 		fmt.Println(err)
-		println(format.SampleRate)
 	}
+	
+	// normalizes song quality 
+	resampled := beep.Resample(4, format.SampleRate, numSamples, streamer)
+	speaker.Play(&CustomSteamer{streamer: resampled})
 
-	// resampled := beep.Resample(4, format.SampleRate, 24000, streamer)
-	// speaker.Play(&CustomSteamer{streamer: resampled})
-	speaker.Play(&CustomSteamer{streamer: streamer})
-
-
-	bar := buildBars(freqSpectrum[0:spectrumWidth], "temp")
+	bar := buildBars(freqSpectrum[spectrumOffset:spectrumWidth], f.Name())
 	uiEvents := ui.PollEvents()
 
 	for {
@@ -120,9 +113,23 @@ func main() {
 				}
 			case <-redraw:
 				if (freqSpectrum[0] != 0) {
-					bar.Data = freqSpectrum[10:spectrumWidth]
+					newData := decay(bar.Data, freqSpectrum[spectrumOffset: spectrumWidth])
+					bar.Data = newData
 					ui.Render(bar)
 				}
 			}
 	}
+}
+
+// keeps bars from flashing as much
+func decay(prevData [] float64, newData [] float64) []float64 {
+	decayedData := make([]float64, spectrumWidth - spectrumOffset)
+	for i, num := range newData {
+		if newData[i] == 0 && prevData[i] > 0 {
+			decayedData[i] = prevData[i]
+		} else {
+			decayedData[i] = num
+		}
+    }
+	return decayedData
 }
