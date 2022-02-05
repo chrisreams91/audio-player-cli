@@ -16,25 +16,32 @@ import (
 )
 
 
-const spectrumWidth = 314
+const numSamples = 48000
+// const defaultWindowWidth = 800
+// const defaultWindowHeight = 450
+// const spectrumSize = 80
+// const bitSize = 64
+
+const peakFalloff = 8.0
+const spectrumWidth = 80
 const maxHeight = 20
 
-var freqSpectrum = make([]float64, 512)
+var freqSpectrum = make([]float64, spectrumWidth)
 var redraw chan string
 
 type CustomSteamer struct {
 	streamer beep.Streamer
-}
+}	
 
 func (cs *CustomSteamer) Stream(samples [][2]float64) (n int, ok bool) {
 	filled := 0
-	// filled is broke
-	// fmt.Println("filled , ", filled)
 	for filled < len(samples) {
-		// should this ok be handled ?
-		n, _ := cs.streamer.Stream(samples[filled:])
-		
-		updateSpectrumValues(44100, samples[filled:], maxHeight, freqSpectrum)
+		n, ok := cs.streamer.Stream(samples[filled:])
+		if (!ok ) {
+			return len(samples), false
+		}
+
+		updateSpectrumValues(44100, samples[filled:], freqSpectrum)
 
 		filled += n
 		redraw <- "redraw that bitch"
@@ -46,7 +53,7 @@ func (cs *CustomSteamer) Err() error {
 	return nil
 }
 
-func updateSpectrumValues(numberOfSamples int, samples [][2]float64, maxValue float64, freqSpectrum []float64) {
+func updateSpectrumValues(numberOfSamples int, samples [][2]float64, freqSpectrum []float64) {
 
 	singleChannel := make([]float64, len(samples))
 	for i := 0; i < len(samples); i++ {
@@ -59,9 +66,9 @@ func updateSpectrumValues(numberOfSamples int, samples [][2]float64, maxValue fl
 		fr := real(fftOutput[i])
 		fi := imag(fftOutput[i])
 		magnitude := math.Sqrt(fr*fr + fi*fi)
-		val := math.Min(maxValue, math.Abs(magnitude))
+		val := math.Min(maxHeight, math.Abs(magnitude))
 		if freqSpectrum[i] > val {
-			freqSpectrum[i] = math.Max(freqSpectrum[i]-8.0, 0.0)
+			freqSpectrum[i] = math.Max(freqSpectrum[i]-peakFalloff, 0.0)
 		} else {
 			freqSpectrum[i] = (val + freqSpectrum[i]) / 2.0
 		}
@@ -90,12 +97,16 @@ func main() {
 	}
 
 	streamer, format, err := mp3.Decode(f)
+	// streamer, _, err := mp3.Decode(f)
 	if err != nil {
 		fmt.Println(err)
+		println(format.SampleRate)
 	}
 
-	resampled := beep.Resample(4, format.SampleRate, sampleRate, streamer)
-	speaker.Play(&CustomSteamer{streamer: resampled})
+	// resampled := beep.Resample(4, format.SampleRate, 24000, streamer)
+	// speaker.Play(&CustomSteamer{streamer: resampled})
+	speaker.Play(&CustomSteamer{streamer: streamer})
+
 
 	bar := buildBars(freqSpectrum[0:spectrumWidth], "temp")
 	uiEvents := ui.PollEvents()
@@ -109,7 +120,7 @@ func main() {
 				}
 			case <-redraw:
 				if (freqSpectrum[0] != 0) {
-					bar.Data = freqSpectrum[0:spectrumWidth]
+					bar.Data = freqSpectrum[10:spectrumWidth]
 					ui.Render(bar)
 				}
 			}
