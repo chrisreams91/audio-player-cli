@@ -19,7 +19,7 @@ import (
 const numSamples = 48000
 // tinker with these numbers
 const peakFalloff = .3
-const maxHeight = 30
+const maxHeight = 20
 const spectrumWidth = 100
 const spectrumOffset = 0
 
@@ -88,7 +88,7 @@ func main() {
     flag.StringVar(&file, "file", "", "mp3 filename")
 	flag.Parse()
 
-	f, err := os.Open("audio/" + file)
+	f, err := os.Open("audio/" + file + ".mp3")
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -101,7 +101,9 @@ func main() {
 	resampled := beep.Resample(4, format.SampleRate, numSamples, streamer)
 	speaker.Play(&CustomSteamer{streamer: resampled})
 
-	bar := buildBars(freqSpectrum[spectrumOffset:spectrumWidth], f.Name())
+	bar := buildTopBars(freqSpectrum[spectrumOffset:spectrumWidth], f.Name())
+	bottomBar := buildBottomBars(freqSpectrum[spectrumOffset:spectrumWidth])
+
 	uiEvents := ui.PollEvents()
 
 	for {
@@ -115,7 +117,14 @@ func main() {
 				if (freqSpectrum[0] != 0) {
 					newData := decay(bar.Data, freqSpectrum[spectrumOffset: spectrumWidth])
 					bar.Data = newData
+					bottomBar.Data = newData
+
+					// bottom bar has to be first?
+					// ui.Render(bottomBar, bar)
+					// ui.Render(bar, bottomBar)
 					ui.Render(bar)
+
+
 				}
 			}
 	}
