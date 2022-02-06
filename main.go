@@ -17,11 +17,11 @@ import (
 
 
 const numSamples = 48000
-// tinker with peak fall off
-const peakFalloff = 8.0
-const spectrumWidth = 80
+// tinker with these numbers
+const peakFalloff = .3
+const maxHeight = 30
+const spectrumWidth = 100
 const spectrumOffset = 0
-const maxHeight = 20
 
 var freqSpectrum = make([]float64, spectrumWidth)
 var redraw chan string

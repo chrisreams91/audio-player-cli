@@ -8,7 +8,7 @@ import (
 
 func buildBars(data [] float64, songName string) *widgets.BarChart{
 	bc := widgets.NewBarChart()
-	bc.SetRect(5, 5, 100, 25)
+	bc.SetRect(5, 0, 100, 15)
 
 	bc.BarWidth = 1
 	bc.BarGap = 0
@@ -19,8 +19,5 @@ func buildBars(data [] float64, songName string) *widgets.BarChart{
 	bc.TitleStyle = ui.NewStyle(ui.ColorWhite)
 	bc.Border = false
 
-	// manage here or in wave processing?
-	// bc.MaxVal = float64(10)
-	
 	return bc
 }
