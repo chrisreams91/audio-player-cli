@@ -6,8 +6,6 @@ import (
 	"sync"
 
 	ui "github.com/gizak/termui/v3"
-
-	rw "github.com/mattn/go-runewidth"
 )
 
 
@@ -20,9 +18,7 @@ func buildTopBars(data[] float64, songName string) *BarChart{
 	bc.BarColors = []ui.Color{ui.ColorRed, ui.ColorGreen}
 
 	bc.NumFormatter = func(f float64) string { return " "}
-	bc.Title = songName
-	bc.TitleStyle = ui.NewStyle(ui.ColorWhite)
-	bc.Border = false
+	bc.Border = true
 
 	bc.PaddingTop = 0
 	bc.PaddingBottom = 0
@@ -41,9 +37,7 @@ func buildBottomBars(data[] float64) *BarChart{
 	bc.BarColors = []ui.Color{ui.ColorRed, ui.ColorGreen}
 
 	bc.NumFormatter = func(f float64) string { return " "}
-	bc.TitleStyle = ui.NewStyle(ui.ColorWhite)
 	bc.Border = false
-
 
 	bc.PaddingTop = 0
 	bc.PaddingBottom = 0
@@ -105,16 +99,16 @@ func (self *BarChart) Draw(buf *ui.Buffer) {
 		}
 
 		// draw label
-		if i < len(self.Labels) {
-			labelXCoordinate := barXCoordinate +
-				int((float64(self.BarWidth) / 2)) -
-				int((float64(rw.StringWidth(self.Labels[i])) / 2))
-			buf.SetString(
-				self.Labels[i],
-				ui.SelectStyle(self.LabelStyles, i),
-				image.Pt(labelXCoordinate, self.Inner.Max.Y-1),
-			)
-		}
+		// if i < len(self.Labels) {
+		// 	labelXCoordinate := barXCoordinate +
+		// 		int((float64(self.BarWidth) / 2)) -
+		// 		int((float64(rw.StringWidth(self.Labels[i])) / 2))
+		// 	buf.SetString(
+		// 		self.Labels[i],
+		// 		ui.SelectStyle(self.LabelStyles, i),
+		// 		image.Pt(labelXCoordinate, self.Inner.Max.Y-1),
+		// 	)
+		// }
 
 		// draw number
 		numberXCoordinate := barXCoordinate + int((float64(self.BarWidth) / 2))
@@ -126,7 +120,7 @@ func (self *BarChart) Draw(buf *ui.Buffer) {
 					ui.SelectColor(self.BarColors, i),
 					ui.SelectStyle(self.NumStyles, i+1).Modifier,
 				),
-				image.Pt(numberXCoordinate, self.Inner.Max.Y-2),
+				image.Pt(numberXCoordinate, self.Inner.Min.Y),
 			)
 		}
 
@@ -223,12 +217,6 @@ func (self *Block) Draw(buf *ui.Buffer) {
 // SetRect implements the Drawable interface.
 func (self *Block) SetRect(x1, y1, x2, y2 int) {
 	self.Rectangle = image.Rect(x1, y1, x2, y2)
-	// self.Inner = image.Rect(
-	// 	self.Min.X+1+self.PaddingLeft,
-	// 	self.Min.Y+1+self.PaddingTop,
-	// 	self.Max.X-1-self.PaddingRight,
-	// 	self.Max.Y-1-self.PaddingBottom,
-	// )
 	self.Inner = image.Rect(x1, y1, x2, y2)
 }
 
