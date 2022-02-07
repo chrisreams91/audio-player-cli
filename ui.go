@@ -12,25 +12,17 @@ func buildTopBars(data[] float64) *BarChart{
 	bc := NewBarChart(false)
 	bc.SetRect(5, 0, 100, 15)
 
-	bc.BarWidth = 1
-	bc.BarGap = 0
-	bc.BarColors = []ui.Color{ui.ColorRed, ui.ColorGreen}
-	bc.NumFormatter = func(f float64) string { return " "}
-	
 	return bc
 }
 
 func buildBottomBars(data[] float64) *BarChart{ 
 	bc := NewBarChart(true)
 	bc.SetRect(5, 15, 100, 30)
-
-	bc.BarWidth = 1
-	bc.BarGap = 0
-	bc.BarColors = []ui.Color{ui.ColorRed, ui.ColorGreen}
-	bc.NumFormatter = func(f float64) string { return " "}
+	
 	return bc
 }
 
+// Everything below is slightly modified copy pasted from the lib so i didnt have to fork
 type BarChart struct {
 	Block
 	BarColors    []ui.Color
@@ -48,12 +40,12 @@ type BarChart struct {
 func NewBarChart(inverted bool) *BarChart {
 	return &BarChart{
 		Block:        *NewBlock(),
-		BarColors:    ui.Theme.BarChart.Bars,
+		BarColors:    []ui.Color{ui.ColorRed, ui.ColorGreen},
 		NumStyles:    ui.Theme.BarChart.Nums,
 		LabelStyles:  ui.Theme.BarChart.Labels,
 		NumFormatter: func(n float64) string { return fmt.Sprint(n) },
-		BarGap:       1,
-		BarWidth:     3,
+		BarGap:       0,
+		BarWidth:     1,
 		inverted: inverted,
 	}
 }
@@ -74,6 +66,7 @@ func (self *BarChart) Draw(buf *ui.Buffer) {
 			for y := self.Inner.Max.Y ; y > (self.Inner.Max.Y-1)-height; y-- {
 				c := ui.NewCell(' ', ui.NewStyle(ui.ColorClear, ui.SelectColor(self.BarColors, i)))
 				if (self.inverted) {
+					// assign this positional 15 to some variable
 					buf.SetCell(c, image.Pt(x, self.Max.Y - y + 15))
 				} else {
 					buf.SetCell(c, image.Pt(x, y))
@@ -81,33 +74,10 @@ func (self *BarChart) Draw(buf *ui.Buffer) {
 			}
 		}
 
-		numberXCoordinate := barXCoordinate + int((float64(self.BarWidth) / 2))
-		if numberXCoordinate <= self.Inner.Max.X {
-			// barLocation := self.Inner.Max.Y
-		// 	if (self.inverted) {
-		// 	barLocation = self.Inner.Min.Y
-		// 	buf.SetString(
-		// 		self.NumFormatter(data),
-		// 		ui.NewStyle(
-		// 			ui.SelectStyle(self.NumStyles, i+1).Fg,
-		// 			ui.SelectColor(self.BarColors, i),
-		// 			ui.SelectStyle(self.NumStyles, i+1).Modifier,
-		// 		),
-		// 		image.Pt(numberXCoordinate, barLocation - 10),
-		// 	)
-		// }
-
-		}
-
 		barXCoordinate += (self.BarWidth + self.BarGap)
 	}
 }
 
-
-// Block is the base struct inherited by most widgets.
-// Block manages size, position, border, and title.
-// It implements all 3 of the methods needed for the `Drawable` interface.
-// Custom widgets will override the Draw method.
 type Block struct {
 	Border      bool
 	BorderStyle ui.Style

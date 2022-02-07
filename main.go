@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"math"
 	"os"
@@ -51,7 +50,6 @@ func (cs *CustomSteamer) Err() error {
 }
 
 func updateSpectrumValues(numberOfSamples int, samples [][2]float64, freqSpectrum []float64) {
-
 	singleChannel := make([]float64, len(samples))
 	for i := 0; i < len(samples); i++ {
 		singleChannel[i] = samples[i][0]
@@ -74,36 +72,36 @@ func updateSpectrumValues(numberOfSamples int, samples [][2]float64, freqSpectru
 
 
 func main() {
-	redraw = make(chan string)
-	if err := ui.Init(); err != nil {
-		log.Fatalf("failed to initialize termui: %v", err)
-	}
-	
-	defer ui.Close()
-
-	sampleRate := beep.SampleRate(numSamples)
-	speaker.Init(sampleRate, sampleRate.N(time.Second/10))
-	
-
 	var file string
     flag.StringVar(&file, "file", "", "mp3 filename")
 	flag.Parse()
 
-	f, err := os.Open("audio/" + file + ".mp3")
+	openedFile, err := os.Open("audio/" + file + ".mp3")
 	if err != nil {
-		fmt.Println(err)
+		log.Fatalf("failed to open file")
 	}
-	streamer, format, err := mp3.Decode(f)
+	streamer, format, err := mp3.Decode(openedFile)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatalf("failed to initialize streamer")
 	}
+	
+
+	sampleRate := beep.SampleRate(numSamples)
+	speaker.Init(sampleRate, sampleRate.N(time.Second/10))
 	
 	// normalizes song quality 
 	resampled := beep.Resample(4, format.SampleRate, numSamples, streamer)
 	speaker.Play(&CustomSteamer{streamer: resampled})
 
+
+	redraw = make(chan string)
+	if err := ui.Init(); err != nil {
+		log.Fatalf("failed to initialize termui: %v", err)
+	}
+	defer ui.Close()
 	top := buildTopBars(freqSpectrum[spectrumOffset:spectrumWidth])
 	bottom := buildBottomBars(freqSpectrum[spectrumOffset:spectrumWidth])
+
 
 	uiEvents := ui.PollEvents()
 
