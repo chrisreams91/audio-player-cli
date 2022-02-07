@@ -11,14 +11,14 @@ import (
 
 func buildTopBars(data[] float64, songName string) *BarChart{
 	bc := NewBarChart(false)
-	bc.SetRect(5, 0, 100, 18)
+	bc.SetRect(5, 0, 100, 15)
 
 	bc.BarWidth = 1
 	bc.BarGap = 0
 	bc.BarColors = []ui.Color{ui.ColorRed, ui.ColorGreen}
 
 	bc.NumFormatter = func(f float64) string { return " "}
-	bc.Border = true
+	bc.Border = false
 
 	bc.PaddingTop = 0
 	bc.PaddingBottom = 0
@@ -30,7 +30,7 @@ func buildTopBars(data[] float64, songName string) *BarChart{
 
 func buildBottomBars(data[] float64) *BarChart{ 
 	bc := NewBarChart(true)
-	bc.SetRect(5, 0, 100, 30)
+	bc.SetRect(5, 0, 100, 15)
 
 	bc.BarWidth = 1
 	bc.BarGap = 0
@@ -52,7 +52,7 @@ func buildBottomBars(data[] float64) *BarChart{
 // be found in the LICENSE file.
 
 type BarChart struct {
-	Block
+	ui.Block
 	BarColors    []ui.Color
 	LabelStyles  []ui.Style
 	NumStyles    []ui.Style // only Fg and Modifier are used
@@ -67,7 +67,7 @@ type BarChart struct {
 
 func NewBarChart(inverted bool) *BarChart {
 	return &BarChart{
-		Block:        *NewBlock(),
+		Block:        *ui.NewBlock(),
 		BarColors:    ui.Theme.BarChart.Bars,
 		NumStyles:    ui.Theme.BarChart.Nums,
 		LabelStyles:  ui.Theme.BarChart.Labels,
@@ -92,36 +92,14 @@ func (self *BarChart) Draw(buf *ui.Buffer) {
 		// draw bar
 		height := int((data / maxVal) * float64(self.Inner.Dy()-2))
 		for x := barXCoordinate; x < ui.MinInt(barXCoordinate+self.BarWidth, self.Inner.Max.X); x++ {
-			for y := self.Inner.Max.Y ; y > (self.Inner.Max.Y-2)-height; y-- {
+			for y := self.Inner.Max.Y ; y > (self.Inner.Max.Y-1)-height; y-- {
 				c := ui.NewCell(' ', ui.NewStyle(ui.ColorClear, ui.SelectColor(self.BarColors, i)))
-				buf.SetCell(c, image.Pt(x, y))
+				if (self.inverted) {
+					buf.SetCell(c, image.Pt(x, self.Max.Y - y))
+				} else {
+					buf.SetCell(c, image.Pt(x, y))
+				}
 			}
-		}
-
-		// draw label
-		// if i < len(self.Labels) {
-		// 	labelXCoordinate := barXCoordinate +
-		// 		int((float64(self.BarWidth) / 2)) -
-		// 		int((float64(rw.StringWidth(self.Labels[i])) / 2))
-		// 	buf.SetString(
-		// 		self.Labels[i],
-		// 		ui.SelectStyle(self.LabelStyles, i),
-		// 		image.Pt(labelXCoordinate, self.Inner.Max.Y-1),
-		// 	)
-		// }
-
-		// draw number
-		numberXCoordinate := barXCoordinate + int((float64(self.BarWidth) / 2))
-		if numberXCoordinate <= self.Inner.Max.X {
-			buf.SetString(
-				self.NumFormatter(data),
-				ui.NewStyle(
-					ui.SelectStyle(self.NumStyles, i+1).Fg,
-					ui.SelectColor(self.BarColors, i),
-					ui.SelectStyle(self.NumStyles, i+1).Modifier,
-				),
-				image.Pt(numberXCoordinate, self.Inner.Min.Y),
-			)
 		}
 
 		barXCoordinate += (self.BarWidth + self.BarGap)

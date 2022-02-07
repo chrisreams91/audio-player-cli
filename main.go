@@ -78,6 +78,7 @@ func main() {
 	if err := ui.Init(); err != nil {
 		log.Fatalf("failed to initialize termui: %v", err)
 	}
+	
 	defer ui.Close()
 
 	sampleRate := beep.SampleRate(numSamples)
@@ -101,8 +102,8 @@ func main() {
 	resampled := beep.Resample(4, format.SampleRate, numSamples, streamer)
 	speaker.Play(&CustomSteamer{streamer: resampled})
 
-	bar := buildTopBars(freqSpectrum[spectrumOffset:spectrumWidth], f.Name())
-	bottomBar := buildBottomBars(freqSpectrum[spectrumOffset:spectrumWidth])
+	top := buildTopBars(freqSpectrum[spectrumOffset:spectrumWidth], f.Name())
+	bottom := buildBottomBars(freqSpectrum[spectrumOffset:spectrumWidth])
 
 	uiEvents := ui.PollEvents()
 
@@ -115,15 +116,15 @@ func main() {
 				}
 			case <-redraw:
 				if (freqSpectrum[0] != 0) {
-					newData := decay(bar.Data, freqSpectrum[spectrumOffset: spectrumWidth])
-					bar.Data = newData
-					bottomBar.Data = newData
+					newData := decay(top.Data, freqSpectrum[spectrumOffset: spectrumWidth])
+					top.Data = newData
+					bottom.Data = newData
 
 					// bottom bar has to be first?
-					// ui.Render(bottomBar, bar)
-					// ui.Render(bar, bottomBar)
-					ui.Render(bar)
+					// ui.Render(bottom, top)
+					ui.Render(bottom)
 
+					// ui.Render(top)
 
 				}
 			}
