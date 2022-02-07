@@ -21,7 +21,7 @@ const numSamples = 48000
 const peakFalloff = .3
 const maxHeight = 20
 const spectrumWidth = 100
-const spectrumOffset = 0
+const spectrumOffset = 5
 
 var freqSpectrum = make([]float64, spectrumWidth)
 var redraw chan string
@@ -102,7 +102,7 @@ func main() {
 	resampled := beep.Resample(4, format.SampleRate, numSamples, streamer)
 	speaker.Play(&CustomSteamer{streamer: resampled})
 
-	top := buildTopBars(freqSpectrum[spectrumOffset:spectrumWidth], f.Name())
+	top := buildTopBars(freqSpectrum[spectrumOffset:spectrumWidth])
 	bottom := buildBottomBars(freqSpectrum[spectrumOffset:spectrumWidth])
 
 	uiEvents := ui.PollEvents()
@@ -120,12 +120,7 @@ func main() {
 					top.Data = newData
 					bottom.Data = newData
 
-					// bottom bar has to be first?
-					// ui.Render(bottom, top)
-					ui.Render(bottom)
-
-					// ui.Render(top)
-
+					ui.Render(top, bottom)
 				}
 			}
 	}

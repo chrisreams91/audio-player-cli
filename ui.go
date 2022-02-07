@@ -8,51 +8,31 @@ import (
 	ui "github.com/gizak/termui/v3"
 )
 
-
-func buildTopBars(data[] float64, songName string) *BarChart{
+func buildTopBars(data[] float64) *BarChart{
 	bc := NewBarChart(false)
 	bc.SetRect(5, 0, 100, 15)
 
 	bc.BarWidth = 1
 	bc.BarGap = 0
 	bc.BarColors = []ui.Color{ui.ColorRed, ui.ColorGreen}
-
 	bc.NumFormatter = func(f float64) string { return " "}
-	bc.Border = false
-
-	bc.PaddingTop = 0
-	bc.PaddingBottom = 0
-	bc.PaddingLeft = 0
-	bc.PaddingRight = 0
 	
 	return bc
 }
 
 func buildBottomBars(data[] float64) *BarChart{ 
 	bc := NewBarChart(true)
-	bc.SetRect(5, 0, 100, 15)
+	bc.SetRect(5, 15, 100, 30)
 
 	bc.BarWidth = 1
 	bc.BarGap = 0
 	bc.BarColors = []ui.Color{ui.ColorRed, ui.ColorGreen}
-
 	bc.NumFormatter = func(f float64) string { return " "}
-	bc.Border = false
-
-	bc.PaddingTop = 0
-	bc.PaddingBottom = 0
-	bc.PaddingLeft = 0
-	bc.PaddingRight = 0
-
 	return bc
 }
 
-// Copyright 2017 Zack Guo <zack.y.guo@gmail.com>. All rights reserved.
-// Use of this source code is governed by a MIT license that can
-// be found in the LICENSE file.
-
 type BarChart struct {
-	ui.Block
+	Block
 	BarColors    []ui.Color
 	LabelStyles  []ui.Style
 	NumStyles    []ui.Style // only Fg and Modifier are used
@@ -67,7 +47,7 @@ type BarChart struct {
 
 func NewBarChart(inverted bool) *BarChart {
 	return &BarChart{
-		Block:        *ui.NewBlock(),
+		Block:        *NewBlock(),
 		BarColors:    ui.Theme.BarChart.Bars,
 		NumStyles:    ui.Theme.BarChart.Nums,
 		LabelStyles:  ui.Theme.BarChart.Labels,
@@ -87,7 +67,6 @@ func (self *BarChart) Draw(buf *ui.Buffer) {
 	}
 
 	barXCoordinate := self.Inner.Min.X
-
 	for i, data := range self.Data {
 		// draw bar
 		height := int((data / maxVal) * float64(self.Inner.Dy()-2))
@@ -95,22 +74,34 @@ func (self *BarChart) Draw(buf *ui.Buffer) {
 			for y := self.Inner.Max.Y ; y > (self.Inner.Max.Y-1)-height; y-- {
 				c := ui.NewCell(' ', ui.NewStyle(ui.ColorClear, ui.SelectColor(self.BarColors, i)))
 				if (self.inverted) {
-					buf.SetCell(c, image.Pt(x, self.Max.Y - y))
+					buf.SetCell(c, image.Pt(x, self.Max.Y - y + 15))
 				} else {
 					buf.SetCell(c, image.Pt(x, y))
 				}
 			}
 		}
 
+		numberXCoordinate := barXCoordinate + int((float64(self.BarWidth) / 2))
+		if numberXCoordinate <= self.Inner.Max.X {
+			// barLocation := self.Inner.Max.Y
+		// 	if (self.inverted) {
+		// 	barLocation = self.Inner.Min.Y
+		// 	buf.SetString(
+		// 		self.NumFormatter(data),
+		// 		ui.NewStyle(
+		// 			ui.SelectStyle(self.NumStyles, i+1).Fg,
+		// 			ui.SelectColor(self.BarColors, i),
+		// 			ui.SelectStyle(self.NumStyles, i+1).Modifier,
+		// 		),
+		// 		image.Pt(numberXCoordinate, barLocation - 10),
+		// 	)
+		// }
+
+		}
+
 		barXCoordinate += (self.BarWidth + self.BarGap)
 	}
 }
-
-// Copyright 2017 Zack Guo <zack.y.guo@gmail.com>. All rights reserved.
-// Use of this source code is governed by a MIT license that can
-// be found in the LICENSE file.
-
-
 
 
 // Block is the base struct inherited by most widgets.
@@ -147,44 +138,8 @@ func NewBlock() *Block {
 	}
 }
 
-func (self *Block) drawBorder(buf *ui.Buffer) {
-	verticalCell := ui.Cell{ui.VERTICAL_LINE, self.BorderStyle}
-	horizontalCell := ui.Cell{ui.HORIZONTAL_LINE, self.BorderStyle}
-
-	// draw lines
-	if self.BorderTop {
-		buf.Fill(horizontalCell, image.Rect(self.Min.X, self.Min.Y, self.Max.X, self.Min.Y+1))
-	}
-	if self.BorderBottom {
-		buf.Fill(horizontalCell, image.Rect(self.Min.X, self.Max.Y-1, self.Max.X, self.Max.Y))
-	}
-	if self.BorderLeft {
-		buf.Fill(verticalCell, image.Rect(self.Min.X, self.Min.Y, self.Min.X+1, self.Max.Y))
-	}
-	if self.BorderRight {
-		buf.Fill(verticalCell, image.Rect(self.Max.X-1, self.Min.Y, self.Max.X, self.Max.Y))
-	}
-
-	// draw corners
-	if self.BorderTop && self.BorderLeft {
-		buf.SetCell(ui.Cell{ui.TOP_LEFT, self.BorderStyle}, self.Min)
-	}
-	if self.BorderTop && self.BorderRight {
-		buf.SetCell(ui.Cell{ui.TOP_RIGHT, self.BorderStyle}, image.Pt(self.Max.X-1, self.Min.Y))
-	}
-	if self.BorderBottom && self.BorderLeft {
-		buf.SetCell(ui.Cell{ui.BOTTOM_LEFT, self.BorderStyle}, image.Pt(self.Min.X, self.Max.Y-1))
-	}
-	if self.BorderBottom && self.BorderRight {
-		buf.SetCell(ui.Cell{ui.BOTTOM_RIGHT, self.BorderStyle}, self.Max.Sub(image.Pt(1, 1)))
-	}
-}
-
 // Draw implements the Drawable interface.
 func (self *Block) Draw(buf *ui.Buffer) {
-	if self.Border {
-		self.drawBorder(buf)
-	}
 	buf.SetString(
 		self.Title,
 		self.TitleStyle,
