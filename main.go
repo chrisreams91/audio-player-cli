@@ -17,13 +17,15 @@ import (
 
 const numSamples = 48000
 // tinker with these numbers
-const peakFalloff = .3
 const maxHeight = 20
-const spectrumWidth = 100
+const spectrumWidth = 150
 const spectrumOffset = 5
+var peakFalloff = 0.3
 
 var freqSpectrum = make([]float64, spectrumWidth)
 var redraw chan string
+var exit chan bool
+
 
 type CustomSteamer struct {
 	streamer beep.Streamer
@@ -34,10 +36,10 @@ func (cs *CustomSteamer) Stream(samples [][2]float64) (n int, ok bool) {
 	for filled < len(samples) {
 		n, ok := cs.streamer.Stream(samples[filled:])
 		if (!ok ) {
-			return len(samples), false
+			return 0, false
 		}
 
-		updateSpectrumValues(numSamples, samples[filled:], freqSpectrum)
+		updateSpectrumValues(samples[filled:], freqSpectrum)
 
 		filled += n
 		redraw <- "redraw that bitch"
@@ -49,7 +51,7 @@ func (cs *CustomSteamer) Err() error {
 	return nil
 }
 
-func updateSpectrumValues(numberOfSamples int, samples [][2]float64, freqSpectrum []float64) {
+func updateSpectrumValues(samples [][2]float64, freqSpectrum []float64) {
 	singleChannel := make([]float64, len(samples))
 	for i := 0; i < len(samples); i++ {
 		singleChannel[i] = samples[i][0]
@@ -91,7 +93,11 @@ func main() {
 	
 	// normalizes song quality 
 	resampled := beep.Resample(4, format.SampleRate, numSamples, streamer)
-	speaker.Play(&CustomSteamer{streamer: resampled})
+	exit = make(chan bool)
+	speaker.Play(beep.Seq(&CustomSteamer{streamer: resampled}, beep.Silence(numSamples), beep.Callback(func() {
+		exit <- true
+	})))
+	
 
 
 	redraw = make(chan string)
@@ -107,32 +113,42 @@ func main() {
 
 	for {
 		select {
+			case <-redraw:
+				newData := preventEmpty(top.Data, freqSpectrum[spectrumOffset: spectrumWidth])
+				top.Data = newData
+				bottom.Data = newData
+
+				ui.Render(top, bottom)
+
 			case e := <-uiEvents:
 				switch e.ID {
 				case "q", "<C-c>":
 					return
 				}
-			case <-redraw:
-				if (freqSpectrum[0] != 0) {
-					newData := decay(top.Data, freqSpectrum[spectrumOffset: spectrumWidth])
-					top.Data = newData
-					bottom.Data = newData
 
-					ui.Render(top, bottom)
-				}
+			case <-exit:
+					return
 			}
 	}
 }
 
-// keeps bars from flashing as much
-func decay(prevData [] float64, newData [] float64) []float64 {
+// some hacky shit
+func preventEmpty(prevData [] float64, newData [] float64) []float64 {
 	decayedData := make([]float64, spectrumWidth - spectrumOffset)
-	for i, num := range newData {
-		if newData[i] == 0 && prevData[i] > 0 {
-			decayedData[i] = prevData[i]
-		} else {
-			decayedData[i] = num
-		}
+	copy(decayedData, newData)
+
+	equal := true
+	for i := 1; i < len(newData); i++ {
+        if newData[i] != newData[0] {
+            equal = false
+        }
     }
+
+	// a hack because drawing ui crashes without data points
+	// sneaking this one non 0 point in off screen for graceful shutdown
+	if (equal) {
+		decayedData[len(decayedData) - 1] = 1
+	}
+
 	return decayedData
 }
