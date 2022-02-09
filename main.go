@@ -20,7 +20,7 @@ const numSamples = 48000
 const maxHeight = 20
 const spectrumWidth = 150
 const spectrumOffset = 5
-var peakFalloff = 0.3
+var decay = 0.2
 
 var freqSpectrum = make([]float64, spectrumWidth)
 var redraw chan string
@@ -65,7 +65,7 @@ func updateSpectrumValues(samples [][2]float64, freqSpectrum []float64) {
 		magnitude := math.Sqrt(fr*fr + fi*fi)
 		val := math.Min(maxHeight, math.Abs(magnitude))
 		if freqSpectrum[i] > val {
-			freqSpectrum[i] = math.Max(freqSpectrum[i]-peakFalloff, 0.0)
+			freqSpectrum[i] = math.Max(freqSpectrum[i]-decay, 0.0)
 		} else {
 			freqSpectrum[i] = (val + freqSpectrum[i]) / 2.0
 		}
@@ -78,7 +78,7 @@ func main() {
     flag.StringVar(&file, "file", "", "mp3 filename")
 	flag.Parse()
 
-	openedFile, err := os.Open("audio/" + file + ".mp3")
+	openedFile, err := os.Open(file)
 	if err != nil {
 		log.Fatalf("failed to open file")
 	}
@@ -134,8 +134,8 @@ func main() {
 
 // some hacky shit
 func preventEmpty(prevData [] float64, newData [] float64) []float64 {
-	decayedData := make([]float64, spectrumWidth - spectrumOffset)
-	copy(decayedData, newData)
+	notGonnaBeEmpty := make([]float64, spectrumWidth - spectrumOffset)
+	copy(notGonnaBeEmpty, newData)
 
 	equal := true
 	for i := 1; i < len(newData); i++ {
@@ -147,8 +147,8 @@ func preventEmpty(prevData [] float64, newData [] float64) []float64 {
 	// a hack because drawing ui crashes without data points
 	// sneaking this one non 0 point in off screen for graceful shutdown
 	if (equal) {
-		decayedData[len(decayedData) - 1] = 1
+		notGonnaBeEmpty[len(notGonnaBeEmpty) - 1] = 1
 	}
 
-	return decayedData
+	return notGonnaBeEmpty
 }
