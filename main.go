@@ -114,7 +114,11 @@ func main() {
 	for {
 		select {
 			case <-redraw:
-				newData := preventEmpty(top.Data, freqSpectrum[spectrumOffset: spectrumWidth])
+				newData := freqSpectrum[spectrumOffset: spectrumWidth]
+				// a hack because drawing ui crashes without data points
+				// sneaking this one non 0 point in off screen for graceful shutdown
+				newData[len(newData) - 1] = 1
+
 				top.Data = newData
 				bottom.Data = newData
 
@@ -130,25 +134,4 @@ func main() {
 					return
 			}
 	}
-}
-
-// some hacky shit
-func preventEmpty(prevData [] float64, newData [] float64) []float64 {
-	notGonnaBeEmpty := make([]float64, spectrumWidth - spectrumOffset)
-	copy(notGonnaBeEmpty, newData)
-
-	equal := true
-	for i := 1; i < len(newData); i++ {
-        if newData[i] != newData[0] {
-            equal = false
-        }
-    }
-
-	// a hack because drawing ui crashes without data points
-	// sneaking this one non 0 point in off screen for graceful shutdown
-	if (equal) {
-		notGonnaBeEmpty[len(notGonnaBeEmpty) - 1] = 1
-	}
-
-	return notGonnaBeEmpty
 }
