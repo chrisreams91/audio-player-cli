@@ -75,7 +75,7 @@ func updateSpectrumValues(samples [][2]float64, freqSpectrum []float64) {
 
 func main() {
 	var file string
-    flag.StringVar(&file, "file", "", "mp3 filename")
+    	flag.StringVar(&file, "file", "", "mp3 filename")
 	flag.Parse()
 
 	openedFile, err := os.Open(file)
